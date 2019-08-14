@@ -1,5 +1,7 @@
 # ytp-rotate
-Youtube player rotate plug.  Tampermonkey script.
+油管视频旋转插件.  Tampermonkey script.
+
+[github](https://github.com/zhzLuke96/ytp-rotate/)
 
 # icon
 [svg-icon](https://github.com/leungwensen/svg-icon)
