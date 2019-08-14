@@ -7,11 +7,11 @@ Youtube player rotate plug.  Tampermonkey script.
 # Usage
 快捷按钮:
 
-![button](./docs/btns.png)
+![button](https://github.com/zhzLuke96/ytp-rotate/raw/master/docs/btns.png)
 
 右键菜单:
 
-![menu](./docs/menu.png)
+![menu](https://github.com/zhzLuke96/ytp-rotate/raw/master/docs/menu.png)
 
 # Updata log
 - 将次要内容移到右键菜单里
