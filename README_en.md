@@ -15,10 +15,8 @@ Right-click menu:
 
 ![menu](https://github.com/zhzLuke96/ytp-rotate/raw/master/docs/menu_en.png)
 
-# Updata log
-- Move secondary functions to the right-click menu
-- Add Picture-in-Picture (some browsers may not support it)
-- Simple local language fit
+# Updata log v.6
+- resize bug fixed.
 
 # Q&A
 When the code is not loaded properly, refresh the page.

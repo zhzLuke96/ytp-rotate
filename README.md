@@ -15,10 +15,8 @@
 
 ![menu](https://github.com/zhzLuke96/ytp-rotate/raw/master/docs/menu.png)
 
-# Updata log
-- 将次要内容移到右键菜单里
-- 增加了画中画功能（部分浏览器可能不支持）
-- 简单的中英文适适配
+# Updata log v.6
+- 解决resize问题
 
 # Q&A
 遇到代码没有正常加载的情况，刷新页面就行了

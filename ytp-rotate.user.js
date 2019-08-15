@@ -2,7 +2,7 @@
 // @author          zhzLuke96
 // @name            油管视频旋转
 // @name:en         youtube player rotate plug
-// @version         0.5
+// @version         0.6
 // @description     油管的视频旋转插件.
 // @description:en  rotate youtebe player.
 // @namespace       https://github.com/zhzLuke96/
@@ -12,62 +12,69 @@
 
 (function () {
     'use strict';
+    const rule_name = "ytp_player_user_js"
     const $ = q => document.querySelector(q);
     const $ytp = $(".html5-main-video");
     const $vid = $(".html5-video-player");
     const currentLang = (navigator.language || navigator.browserLanguage || navigator.systemLanguage).toLowerCase();
     const on_zh_lang = currentLang.indexOf("zh") > -1;
-    let state = 0;
-
-    function css_load(text) {
-        let ret = {};
-        for (let row of text.split(";")) {
-            if (row != "") {
-                let t = row.split(":");
-                ret[t[0].trim()] = t[1].trim();;
-            }
-        }
-        return ret
+    
+    const $style = document.createElement('style');
+    let currentCSS = {};
+    document.getElementsByTagName('head')[0].appendChild($style);
+    function setPlayerStyle(rule){
+        $style.innerHTML = `.${rule_name}{${rule}}`;
     }
+    function toggleRuleTransform(rule){
+        if(currentCSS["transform"]){
+            if(currentCSS["transform"].indexOf(rule) > -1)
+                currentCSS["transform"] = currentCSS["transform"].replace(rule,"")
+            else
+                currentCSS["transform"] += rule;
+        }else{
+            currentCSS["transform"] = rule;
+        }
+        setPlayerStyle(css_dump(currentCSS));
+    }
+    $ytp.classList.add(rule_name);
+    setTimeout(()=>$ytp.addEventListener("resize", refresh_vid_style),1000);
+
+    (rule => {
+        var style = document.createElement('style');
+        document.getElementsByTagName('head')[0].appendChild(style);
+        style.innerHTML = rule
+    })(`
+    video.ytp_horizintal{transform:rotateX(180deg)}
+    video.ytp_vertical{transform:rotateY(180deg)}
+    `)
+    let state = 0;
 
     function css_dump(obj) {
         let ret = "";
         for (let key in obj) {
             if (obj.hasOwnProperty(key)) {
-                ret += `${key}:${obj[key]};`;
+                ret += `${key}:${obj[key]} !important;`;
             }
         }
         return ret;
     }
 
-    function rotate_vid() {
-        let css = css_load($ytp.style.cssText);
-        state = (state + 1) % 4;
-        if (css["transform"] == undefined) state = 1;
+    function refresh_vid_style(){
+        let css = {};
         let deg = state * 90;
-
-        let x = state % 2 == 0 ? $ytp.clientWidth : $ytp.clientHeight;
+        // let x = state % 2 == 0 ? $ytp.clientWidth : $ytp.clientHeight;
         let y = state % 2 == 1 ? $ytp.clientWidth : $ytp.clientHeight;
-        css.left = ~~(($vid.clientWidth - x * (y / $vid.clientHeight)) / 2) + "px";
+        // css.left = ~~(($vid.clientWidth - x * (y / $vid.clientHeight)) / 2) + "px";
 
         css["transform"] = `rotate(${deg}deg)`;
         css["transform"] += ` scale(${$vid.clientHeight / y})`;
-        $ytp.style.cssText = css_dump(css);
+        currentCSS = css;
+        setPlayerStyle(css_dump(css));
     }
 
-    function toggle_tans(el, repr) {
-        let css = css_load(el.style.cssText);
-        let t = css["transform"];
-        if (t) {
-            if (t.indexOf(repr) != -1) {
-                css["transform"] = t.replace(repr, "");
-            } else {
-                css["transform"] += " " + repr;
-            }
-        } else {
-            css["transform"] = repr;
-        }
-        el.style.cssText = css_dump(css);
+    function rotate_vid() {
+        state = (state + 1) % 4;
+        refresh_vid_style()
     }
 
     function addbutton(html, options, onRight = true) {
@@ -150,9 +157,8 @@
     // flip horizintal
     append_context_menu({
         callback() {
-            if ($ytp.style.cssText.indexOf("transform") == -1) state = 0;
-            if (state % 2 == 1) toggle_tans($ytp, "rotateX(180deg)");
-            else toggle_tans($ytp, "rotateY(180deg)");
+            if (state % 2 == 1)toggleRuleTransform("rotateX(180deg)")
+            else toggleRuleTransform("rotateY(180deg)");
         },
         label: on_zh_lang ? "水平翻转" : "flip horizintal",
         content: "️️↔️",
@@ -161,9 +167,8 @@
     // flip vertical
     append_context_menu({
         callback() {
-            if ($ytp.style.cssText.indexOf("transform") == -1) state = 0;
-            if (state % 2 == 0) toggle_tans($ytp, "rotateX(180deg)");
-            else toggle_tans($ytp, "rotateY(180deg)");
+            if (state % 2 == 1)toggleRuleTransform("rotateY(180deg)")
+            else toggleRuleTransform("rotateX(180deg)");
         },
         label: on_zh_lang ? "垂直翻转" : "flip vertical",
         content: "↕️",
