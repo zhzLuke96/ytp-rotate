@@ -1,6 +1,6 @@
 // ==UserScript==
 // @author          zhzLuke96
-// @name            油管视频旋转beta
+// @name            油管视频旋转
 // @name:en         youtube player rotate plug
 // @version         0.7
 // @description     油管的视频旋转插件.
