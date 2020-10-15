@@ -15,13 +15,12 @@
 
 ![menu](https://github.com/zhzLuke96/ytp-rotate/raw/master/docs/menu.png)
 
-# Updata log v.6
-- 解决resize问题
+# Updata log v.7
+- 重构
+- 正确的缩放逻辑
 
 # Q&A
-遇到代码没有正常加载的情况，刷新页面就行了
-
-之后应该会很少更新了
+可以说是相当稳定了，几次播放页改版也没动这些基础播放器结构
 
 # LICENSE
 MIT
