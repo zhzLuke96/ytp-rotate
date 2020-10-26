@@ -28,6 +28,9 @@
         }
     }
 
+    const dommap = {};
+    const applydom = (key, fn) => dommap[key] && fn(dommap[key]);
+
     // init ytp_horizintal ytp_vertical class
     ;
     (rule => {
@@ -60,7 +63,9 @@
         const state = {
             rotate: 0, // 0 1 2 3 => 0 90 180 270
             horizintal: false,
-            vertical: false
+            vertical: false,
+
+            plugin_working: false,
         }
         // utils
         function setStyle(rule) {
@@ -91,8 +96,8 @@
 
         // bind play event
         setTimeout(() => {
-            $ytp_player_vid.addEventListener('play', update);
-            $ytp_player.addEventListener("resize", throttle(update, 500));
+            $ytp_player_vid.addEventListener('play', () => state.plugin_working && update());
+            $ytp_player.addEventListener("resize", throttle(() => state.plugin_working && setTimeout(update, 100), 500));
         }, 500)
 
         const update = () => {
@@ -103,9 +108,11 @@
                 if (state.rotate % 2 == 1) {
                     [w, h] = [h, w];
                 }
-                if (pw < ph) {
+                // pw === w
+                if (~~(pw * h / w) <= h) { // 💥💥💥
                     return pw / w;
                 }
+                // ph === h
                 return ph / h;
             })();
 
@@ -123,20 +130,38 @@
                 if (state % 2 == 1) toggleRuleTransform("rotateY(180deg)")
                 else toggleRuleTransform("rotateX(180deg)");
             }
+
+            // ---------- update UI ---------- 👇
+            applydom('menu_rotate', (elem) => {
+                elem.querySelector(".ytp-menuitem-content").innerHTML = state.rotate * 90 + '°';
+            })
+            // applydom('menu_horizintal', (elem) => {
+            //     elem.setAttribute('aria-checked', state.horizintal.toString());
+            // })
+            // applydom('menu_vertical', (elem) => {
+            //     elem.setAttribute('aria-checked', state.vertical.toString());
+            // })
+            // applydom('menu_pip', (elem) => {
+            //     // 
+            // })
+            // ---------- update UI ---------- 👆
         }
 
         return {
             rotate() {
+                state.plugin_working = true;
                 state.rotate = (state.rotate + 1) % 4;
                 update();
                 return state.rotate;
             },
             toogleHorizintal() {
+                state.plugin_working = true;
                 state.horizintal = !state.horizintal;
                 update();
                 return state.horizintal;
             },
             toogleVertical() {
+                state.plugin_working = true;
                 state.vertical = !state.vertical;
                 update();
                 return state.vertical;
@@ -147,7 +172,7 @@
                 state.vertical = false;
                 update();
                 return state;
-            }
+            },
         }
     }
 
@@ -155,16 +180,18 @@
     { // mount
         const $vid = $(".html5-main-video");
         const $player = $(".html5-video-player");
+
         if ($vid && $player) {
             playerApi = setup($player, $vid);
         } else {
-            window.addEventListener('popstate', throttle(() => {
+            // 也许...有某种情况会不生成player
+            window.addEventListener('popstate', () => {
                 const $vid = $(".html5-main-video");
                 const $player = $(".html5-video-player");
                 if ($vid && $player) {
                     playerApi = setup($player, $vid);
                 }
-            }, 500))
+            })
         }
     };
 
@@ -183,11 +210,12 @@
         b.innerHTML = html;
         b.className = "ytp-button";
         push(b);
+        if (options.key) dommap[options.key] = b;
         if (options.click) b.addEventListener("click", options.click);
         if (options.css) b.style.cssText = options.css;
         if (options.id) b.id = options.id;
         if (options.title) b.title = options.title;
-        return void 0;
+        return b;
     }
 
     // rotate 90
@@ -197,7 +225,8 @@
         click: () => playerApi.rotate && playerApi.rotate(),
         css: "fill:white;width:20px;margin-right:1rem;",
         id: "rotate-btn",
-        title: on_zh_lang ? "旋转视频" : "rotate"
+        title: on_zh_lang ? "旋转视频" : "rotate",
+        key: 'btn_rotate'
     })
 
     function append_context_menu({
@@ -205,7 +234,8 @@
         content = '<div class="ytp-menuitem-toggle-checkbox"></div>',
         href,
         icon,
-        callback
+        callback,
+        key
     }) {
         const $menu = document.querySelector(".ytp-contextmenu>.ytp-panel>.ytp-panel-menu");
         let $ele = null;
@@ -215,6 +245,7 @@
         } else {
             $ele = document.querySelector(".ytp-contextmenu>.ytp-panel>.ytp-panel-menu>div.ytp-menuitem").cloneNode(true)
         }
+        key && (dommap[key] = $ele);
         label && ($ele.querySelector(".ytp-menuitem-label").innerHTML = label);
         content && ($ele.querySelector(".ytp-menuitem-content").innerHTML = content);
         icon && ($ele.querySelector(".ytp-menuitem-icon").innerHTML = icon);
@@ -227,11 +258,12 @@
         const $menu = document.querySelector(".ytp-contextmenu>.ytp-panel>.ytp-panel-menu");
         if (!$menu || $menu.innerHTML === '') {
             // waiting framework do something
-            return setTimeout(mountBtnAndMenu, 300)
+            return setTimeout(mountMenu, 300)
         }
 
         // github link
         append_context_menu({
+            key: 'menu_github',
             label: "-- github --",
             content: "️️⭐",
             href: "https://github.com/zhzLuke96/ytp-rotate",
@@ -239,6 +271,7 @@
 
         // rotate menuitem
         append_context_menu({
+            key: 'menu_rotate',
             callback: (ev) => {
                 if (!playerApi) return;
                 const elem = ev.currentTarget;
@@ -251,6 +284,7 @@
 
         // flip horizintal
         append_context_menu({
+            key: 'menu_horizintal',
             callback(ev) {
                 if (!playerApi) return;
                 const elem = ev.currentTarget;
@@ -262,6 +296,7 @@
 
         // flip vertical
         append_context_menu({
+            key: 'menu_vertical',
             callback(ev) {
                 if (!playerApi) return;
                 const elem = ev.currentTarget;
@@ -273,6 +308,7 @@
 
         // picture in picture
         append_context_menu({
+            key: 'menu_pip',
             callback(ev) {
                 const elem = ev.currentTarget;
                 try {
