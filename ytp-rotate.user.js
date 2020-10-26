@@ -2,7 +2,7 @@
 // @author          zhzLuke96
 // @name            油管视频旋转
 // @name:en         youtube player rotate plug
-// @version         0.9
+// @version         1.1
 // @description     油管的视频旋转插件.
 // @description:en  rotate youtebe player.
 // @namespace       https://github.com/zhzLuke96/
