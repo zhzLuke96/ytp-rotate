@@ -15,12 +15,13 @@
 
 ![menu](https://github.com/zhzLuke96/ytp-rotate/raw/master/docs/menu.png)
 
-# Updata log v.7
-- 重构
-- 正确的缩放逻辑
+# Updata log v1.1
+- 旋转角度和一些菜单ui反馈
+- discussions/65010 修复更新引入的问题
+- 不点击任何脚本相关操作时不干预播放器显示
 
 # Q&A
-可以说是相当稳定了，几次播放页改版也没动这些基础播放器结构
+可以到[github issues](https://github.com/zhzLuke96/ytp-rotate/issues)反馈
 
 # LICENSE
 MIT
