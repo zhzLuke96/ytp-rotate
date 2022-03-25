@@ -15,8 +15,8 @@
 
 ![menu](https://github.com/zhzLuke96/ytp-rotate/raw/master/docs/menu.png)
 
-# Updata log v1.2
-- 合并pr: 修复找不到旋转icon的问题 #2
+# Updata log v1.3
+- 合并pr: 修复不稳定情况下 若干undefined case #3
 
 # Q&A
 可以到[github issues](https://github.com/zhzLuke96/ytp-rotate/issues)反馈

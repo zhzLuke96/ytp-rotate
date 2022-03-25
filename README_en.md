@@ -15,10 +15,8 @@ Right-click menu:
 
 ![menu](https://github.com/zhzLuke96/ytp-rotate/raw/master/docs/menu_en.png)
 
-# Updata log v1.1
-- Rotation angle and some menu ui feedback
-- discussions/65010 Fix problems introduced by the update
-- Now do not interfere with player display without clicking on any script-related actions
+# Updata v1.3
+- merge PR: 修复不稳定情况下 若干undefined case #3
 
 # Q&A
 issue [here](https://github.com/zhzLuke96/ytp-rotate/issues) on github.
