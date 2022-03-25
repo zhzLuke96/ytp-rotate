@@ -177,33 +177,56 @@
     }
 
     let playerApi = null; //
-    { // mount
-        const $vid = $(".html5-main-video");
-        const $player = $(".html5-video-player");
 
-        if ($vid && $player) {
-            playerApi = setup($player, $vid);
-        } else {
-            // 也许...有某种情况会不生成player
-            window.addEventListener('popstate', () => {
-                const $vid = $(".html5-main-video");
-                const $player = $(".html5-video-player");
-                if ($vid && $player) {
-                    playerApi = setup($player, $vid);
-                }
-            })
+    playerApi = await new Promise((resolve)=>{
+        // 网络情况较差，或者其他情况。轮询查出 playerApi
+        function c() {
+            const $vid = $(".html5-main-video");
+            const $player = $(".html5-video-player");
+            if ($vid && $player) {
+                resolve(setup($player, $vid))
+            } else {
+                setTimeout(() => {
+                    c()
+                }, 2000)
+            }
         }
-    };
+        c() 
+    })
+
+    
 
     // button and menu
     async function addbutton(html, options, onRight = true) {
         let p, push;
         if (onRight) {
-            p = $(".ytp-right-controls");
+            p = await new Promise((resolve, reject) => {
+                function c() {
+                    if ($(".ytp-right-controls")) {
+                        resolve($(".ytp-right-controls"))
+                    } else {
+                        setTimeout(() => {
+                            c()
+                        }, 2000)
+                    }
+                }
+                c()
+            })
             push = n => p.insertBefore(n, p.firstElementChild);
         } else {
             // left
-            p = $(".ytp-left-controls");
+            p = await new Promise((resolve, reject) => {
+                function c() {
+                    if ($(".ytp-left-controls")) {
+                        resolve($(".ytp-left-controls"))
+                    } else {
+                        setTimeout(() => {
+                            c()
+                        }, 2000)
+                    }
+                }
+                c()
+            })
             push = n => p.appendChild(n);
         }
 
