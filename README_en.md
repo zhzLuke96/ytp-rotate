@@ -1,6 +1,9 @@
 # ytp-rotate
 Youtube player rotate plug.  Tampermonkey script.
 
+Features: 
+- Rotation, horizontal flip, vertical flip ytb video
+
 [github](https://github.com/zhzLuke96/ytp-rotate/)
 
 # icon
@@ -15,7 +18,7 @@ Right-click menu:
 
 ![menu](https://github.com/zhzLuke96/ytp-rotate/raw/master/docs/menu_en.png)
 
-# Updata v1.3
+# Change log v1.3
 - merge PR: 修复不稳定情况下 若干undefined case #3
 
 # Q&A

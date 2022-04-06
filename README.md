@@ -1,6 +1,9 @@
 # ytp-rotate
 油管视频旋转插件.  Tampermonkey script.
 
+功能：
+- 旋转、水平翻转、垂直翻转油管视频
+
 [github](https://github.com/zhzLuke96/ytp-rotate/)
 
 # icon
@@ -15,7 +18,7 @@
 
 ![menu](https://github.com/zhzLuke96/ytp-rotate/raw/master/docs/menu.png)
 
-# Updata log v1.3
+# Change log v1.3
 - 合并pr: 修复不稳定情况下 若干undefined case #3
 
 # Q&A
