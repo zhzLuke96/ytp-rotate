@@ -1,28 +1,54 @@
+Here is the English version of the README:
+
 # ytp-rotate
-Youtube player rotate plug.  Tampermonkey script.
 
-Features: 
-- Rotation, horizontal flip, vertical flip ytb video
+Youtube video rotator plugin. Tampermonkey script.
 
-[github](https://github.com/zhzLuke96/ytp-rotate/)
+## Features
 
-# icon
-[svg-icon](https://github.com/leungwensen/svg-icon)
+- Rotate video player view (rotate 90 degrees clockwise) 
+- Flip video horizontally
+- Flip video vertically
+- Turn on/off fullscreen cover mode
+- Turn on/off picture-in-picture mode
 
-# Usage
-quick button:
+## Usage 
 
-![button](https://github.com/zhzLuke96/ytp-rotate/raw/master/docs/btns.png)
+### Shortcut Buttons
 
-Right-click menu:
+Two shortcut buttons added on the right side of the player control bar:
+
+- Rotate Button: Click to rotate 90 degrees clockwise
+- Cover Screen Button: Click to toggle fullscreen cover mode
+
+![buttons](https://github.com/zhzLuke96/ytp-rotate/raw/master/docs/btns.png)
+
+### Context Menu
+
+Right click on the video player to see added options:
+
+- Toggle Plugin: Turn on/off the plugin to avoid conflicts with other scripts
+- Rotate 90°: Show current rotation angle, click to rotate 
+- Cover Screen: Show current fullscreen cover mode
+- Flip Horizontal: Show current horizontal flip status
+- Flip Vertical: Show current vertical flip status
+- Picture in Picture: Show current PIP mode, click to toggle
 
 ![menu](https://github.com/zhzLuke96/ytp-rotate/raw/master/docs/menu_en.png)
 
-# Change log v1.3
-- merge PR: 修复不稳定情况下 若干undefined case #3
+## Changelog v2.0
 
-# Q&A
-issue [here](https://github.com/zhzLuke96/ytp-rotate/issues) on github.
+- Refactored code with OOP
+- Added icons
+- Added fullscreen cover mode
+- Added cover screen button on control bar
+- Removed github link menu button 
+- Added toggle plugin option in context menu to avoid conflicts
 
-# LICENSE
+## Issues
+
+Feel free to submit any issues or feedback on the [Issues Page](https://github.com/zhzLuke96/ytp-rotate/issues).
+
+## License
+
 MIT
