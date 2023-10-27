@@ -8,6 +8,10 @@
 // @namespace       https://github.com/zhzLuke96/
 // @match           https://www.youtube.com/*
 // @grant           none
+// @license         MIT
+// @updateURL       https://github.com/zhzLuke96/ytp-rotate/raw/master/ytp-rotate.user.js
+// @downloadURL     https://github.com/zhzLuke96/ytp-rotate/raw/master/ytp-rotate.user.js
+// @supportURL      https://github.com/zhzLuke96/ytp-rotate/issues
 // ==/UserScript==
 
 (async function () {
