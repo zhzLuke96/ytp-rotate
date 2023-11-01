@@ -2,10 +2,10 @@
 // @author          zhzLuke96
 // @name            油管视频旋转
 // @name:en         youtube player rotate
-// @version         2.0
+// @version         2.1
 // @description     油管的视频旋转插件.
 // @description:en  rotate youtube player.
-// @namespace       https://github.com/zhzLuke96/
+// @namespace       https://github.com/zhzLuke96/ytp-rotate
 // @match           https://www.youtube.com/*
 // @grant           none
 // @license         MIT
@@ -68,7 +68,7 @@
     },
   };
   const constants = {
-    version: "v2.0",
+    version: "v2.1",
     user_lang:
       (
         navigator.language ||
@@ -95,6 +95,16 @@
         }, limit);
       }
     };
+  }
+
+  function $css(style_obj, important = true) {
+    return (
+      Object.entries(style_obj || {})
+        // transform用array储存属性
+        .map(([k, v]) => [k, Array.isArray(v) ? v.join(" ") : v])
+        .map(([k, v]) => `${k}:${v} ${important ? "!important" : ""};`)
+        .join("\n")
+    );
   }
 
   async function ensure_query(selector) {
@@ -173,12 +183,6 @@
     }
   }
 
-  function style_to_str(style_obj, important = true) {
-    return Object.entries(style_obj || {})
-      .map(([k, v]) => `${k}:${v} ${important ? "!important" : ""};`)
-      .join("\n");
-  }
-
   class YtpPlayerUI {
     key2dom = {};
     enabled = true;
@@ -210,6 +214,8 @@
 
     disable() {
       this.enabled = false;
+
+      // NOTE 因为隐藏之后menu container不会resize所以算了不隐藏了...
       // for (const [key, dom] of Object.entries(this.key2dom)) {
       //   if (key === "menu_toggle_plugin") continue;
       //   dom.hidden = true;
@@ -353,7 +359,9 @@
       cover_screen: false,
     };
 
-    styles = {};
+    styles = {
+      transform: [],
+    };
     $style = document.createElement("style");
 
     constructor() {
@@ -384,19 +392,10 @@
       );
     }
 
-    setRule(rule) {
-      this.$style.innerHTML = `.${constants.style_rule_name}{${rule}}`;
-    }
-
-    toggle_transform(rule) {
-      if (this.styles.transform) {
-        if (this.styles.transform.indexOf(rule) > -1)
-          this.styles.transform = this.styles.transform.replace(rule, "");
-        else this.styles.transform += rule;
-      } else {
-        this.styles.transform = rule;
-      }
-      this.setRule(style_to_str(this.styles));
+    updateRule(overwrite_str) {
+      const cssText =
+        overwrite_str === undefined ? $css(this.styles) : overwrite_str;
+      this.$style.innerHTML = `.${constants.style_rule_name}{${cssText}}`;
     }
 
     /**
@@ -452,24 +451,26 @@
         this.status.vertical === false;
       if (is_weak_enabled) {
         // 清空副作用
-        this.setRule("");
+        this.updateRule("");
         return;
       }
 
-      this.styles.transform = `rotate(${this.status.rotate * 90}deg)`;
-      this.styles.transform += ` scale(${scaleK})`;
-
-      this.setRule(style_to_str(this.styles));
-
+      const transform_arr = [
+        `rotate(${this.status.rotate * 90}deg)`,
+        `scale(${scaleK})`,
+      ];
+      const append_transform = (text) => transform_arr.push(text);
       if (this.status.horizontal) {
-        if (this.status.rotate % 2 == 1)
-          this.toggle_transform("rotateX(180deg)");
-        else this.toggle_transform("rotateY(180deg)");
+        if (this.status.rotate % 2 == 1) append_transform("rotateX(180deg)");
+        else append_transform("rotateY(180deg)");
       }
       if (this.status.vertical) {
-        if (this.status % 2 == 1) this.toggle_transform("rotateY(180deg)");
-        else this.toggle_transform("rotateX(180deg)");
+        if (this.status.rotate % 2 == 1) append_transform("rotateY(180deg)");
+        else append_transform("rotateX(180deg)");
       }
+      this.styles.transform = transform_arr;
+
+      this.updateRule();
     }
 
     enabled = true;
@@ -522,7 +523,6 @@
   }
 
   async function main() {
-    console.log(`[ytp-rotate] ${constants.version} (${constants.user_lang})`);
     const player = new YtpPlayer();
     await player.setup();
 
@@ -530,7 +530,7 @@
     await player.ui.add_button({
       html: assets.icons.rotate,
       on_click: () => player.rotate_transform.rotate(),
-      css_text: style_to_str(
+      css_text: $css(
         {
           display: "inline-flex",
           "align-items": "center",
@@ -550,7 +550,7 @@
     await player.ui.add_button({
       html: assets.icons.fullscreen,
       on_click: () => player.rotate_transform.toggle_cover_screen(),
-      css_text: style_to_str(
+      css_text: $css(
         {
           display: "inline-flex",
           "align-items": "center",
@@ -668,11 +668,13 @@
       icon: assets.icons.pip,
     });
 
-    console.log(`[ytp-rotate] ready`);
     return player;
   }
 
-  main().catch((err) => {
-    console.error(err);
-  });
+  console.log(`[ytp-rotate] ${constants.version} (${constants.user_lang})`);
+  main()
+    .then(() => console.log(`[ytp-rotate] ready`))
+    .catch((err) => {
+      console.error(err);
+    });
 })();

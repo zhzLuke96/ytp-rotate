@@ -1,54 +1,58 @@
-Here is the English version of the README:
-
-# ytp-rotate
-
-Youtube video rotator plugin. Tampermonkey script.
+# ytp-rotate - YouTube Video Rotator UserScript
 
 ## Features
-
-- Rotate video player view (rotate 90 degrees clockwise) 
+- Rotate the video player view 
 - Flip video horizontally
 - Flip video vertically
-- Turn on/off fullscreen cover mode
-- Turn on/off picture-in-picture mode
+- Toggle fullscreen fill mode
+- Toggle picture-in-picture mode
 
-## Usage 
+## Usage
 
 ### Shortcut Buttons
+Two shortcut buttons are added to the right side of the player controls:
 
-Two shortcut buttons added on the right side of the player control bar:
-
-- Rotate Button: Click to rotate 90 degrees clockwise
-- Cover Screen Button: Click to toggle fullscreen cover mode
+- Rotate Video button: Click to rotate the video clockwise by 0 degrees
+- Fill Screen button: Click to toggle fullscreen fill mode
 
 ![buttons](https://github.com/zhzLuke96/ytp-rotate/raw/master/docs/btns.png)
 
-### Context Menu
+> Red box shows script additions
 
+### Right Click Menu
 Right click on the video player to see added options:
 
-- Toggle Plugin: Turn on/off the plugin to avoid conflicts with other scripts
-- Rotate 90°: Show current rotation angle, click to rotate 
-- Cover Screen: Show current fullscreen cover mode
-- Flip Horizontal: Show current horizontal flip status
-- Flip Vertical: Show current vertical flip status
-- Picture in Picture: Show current PIP mode, click to toggle
+- Toggle Script: Turn the script on/off to avoid conflicts with other scripts
+- Rotate 90°: Show/toggle rotation angle  
+- Fill Screen: Show/toggle fullscreen fill mode
+- Flip Horizontal: Show/toggle horizontal flip
+- Flip Vertical: Show/toggle vertical flip
+- Picture-in-Picture: Show/toggle picture-in-picture mode
 
-![menu](https://github.com/zhzLuke96/ytp-rotate/raw/master/docs/menu_en.png)
+![menu](https://github.com/zhzLuke96/ytp-rotate/raw/master/docs/menu.png)
 
-## Changelog v2.0
-
-- Refactored code with OOP
-- Added icons
-- Added fullscreen cover mode
-- Added cover screen button on control bar
-- Removed github link menu button 
-- Added toggle plugin option in context menu to avoid conflicts
+> Red box shows script additions
 
 ## Issues
 
-Feel free to submit any issues or feedback on the [Issues Page](https://github.com/zhzLuke96/ytp-rotate/issues).
+- [Github Issues](https://github.com/zhzLuke96/ytp-rotate/issues)
+- [Greasyfork Feedback](https://greasyfork.org/zh-CN/scripts/375568-%E6%B2%B9%E7%AE%A1%E8%A7%86%E9%A2%91%E6%97%8B%E8%BD%AC/feedback)
+
+
+## Change Log
+
+### [2.1] - 2023-11-01
+- Fix vertical rotate bug
+- Change script namespace
+
+### [2.0] - 2023-10-28  
+- Refactor code
+- Add SVG icons
+- Improve script listener methods
+- Add fill screen mode
+- Remove GitHub link menu button
+- Add toggle script option to right click menu to avoid conflicts
+
 
 ## License
-
 MIT
