@@ -2,7 +2,7 @@
 // @author          zhzLuke96
 // @name            油管视频旋转
 // @name:en         youtube player rotate
-// @version         2.1
+// @version         2.2
 // @description     油管的视频旋转插件.
 // @description:en  rotate youtube player.
 // @namespace       https://github.com/zhzLuke96/ytp-rotate
@@ -12,6 +12,7 @@
 // @updateURL       https://github.com/zhzLuke96/ytp-rotate/raw/master/ytp-rotate.user.js
 // @downloadURL     https://github.com/zhzLuke96/ytp-rotate/raw/master/ytp-rotate.user.js
 // @supportURL      https://github.com/zhzLuke96/ytp-rotate/issues
+// @icon            https://www.google.com/s2/favicons?sz=64&domain=youtube.com
 // ==/UserScript==
 
 (async function () {
@@ -68,7 +69,7 @@
     },
   };
   const constants = {
-    version: "v2.1",
+    version: "v2.2",
     user_lang:
       (
         navigator.language ||
@@ -82,20 +83,6 @@
   const i18n = (x) =>
     assets.locals[constants.user_lang.includes("zh") ? "zh" : "en"][x] || x;
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-  // ref:https://stackoverflow.com/questions/27078285/simple-throttle-in-js
-  function throttle(callback, limit) {
-    var waiting = false;
-    return function () {
-      if (!waiting) {
-        callback.apply(this, arguments);
-        waiting = true;
-        setTimeout(function () {
-          waiting = false;
-        }, limit);
-      }
-    };
-  }
 
   function $css(style_obj, important = true) {
     return (
@@ -125,12 +112,17 @@
     ui = new YtpPlayerUI();
     rotate_transform = new RotateTransform();
     $player = ensure_query(".html5-video-player");
-    $video = ensure_query(".html5-main-video");
+    $video = null; // 从$player中获取
 
     enabled = true;
 
     constructor() {
       this.ready = this.setup();
+
+      this.ready.then(() => {
+        // ready 之后监听player元素变化
+        this.observe_player();
+      });
     }
 
     // 需要等待到视频页面
@@ -154,10 +146,60 @@
     async setup() {
       await this.waitForVideoPage();
       const $player = await this.$player;
-      const $video = await this.$video;
+      const $video = $player.querySelector(
+        ".html5-video-container .html5-main-video"
+      );
+      if (!$video) {
+        throw new Error("can't find video element");
+      }
       this.ui.mount($video, $player);
       this.rotate_transform.mount($video, $player);
       this.enable();
+    }
+
+    // 监听player元素变化
+    // NOTE: 加这个是因为油管的广告也是用player播放，并且播放完之后video元素不会复用...直接就删了...所以需要监听player的子元素变化
+    // NOTE2: 其实理论上说css写在player上就行了，但是计算缩放需要针对特定的视频分辨率，所以还是写在video上比较好
+    async observe_player() {
+      if (window.MutationObserver === undefined) {
+        // 有可能没有
+        console.warn(
+          `[ytp-rotate] MutationObserver not supported, can't observe player`
+        );
+        return;
+      }
+      const observer = new MutationObserver((mutationsList, observer) => {
+        for (const mutation of mutationsList) {
+          if (mutation.type === "childList") {
+            const video_elem =
+              mutation.target.querySelector(".html5-main-video");
+            if (!video_elem) {
+              continue;
+            }
+            if (video_elem !== this.$video) {
+              this.$video = video_elem;
+              this.reset_rotate_component();
+            }
+          }
+        }
+      });
+      observer.observe(await this.$player, { childList: true });
+    }
+
+    // 重置旋转组件
+    // NOTE 现在只有video元素变化才会调用
+    async reset_rotate_component() {
+      console.warn(
+        `[ytp-rotate] video element changed, reset rotate component...`
+      );
+
+      const $player = await this.$player;
+      const $video = $player.querySelector(
+        ".html5-video-container .html5-main-video"
+      );
+      this.rotate_transform.unmount();
+      this.rotate_transform = new RotateTransform();
+      this.rotate_transform.mount($video, $player);
     }
 
     enable() {
@@ -379,17 +421,10 @@
       this.$player = $player;
 
       $video.classList.add(constants.style_rule_name);
-      // bind play event
-      // FIXME 没有gc事件
-      // TODO 这里需要绑定这两个事件吗？感觉好像不需要？🤔
-      $video.addEventListener("play", () => this.enabled && this.update());
-      window.addEventListener(
-        "resize",
-        throttle(
-          () => this.enabled && setTimeout(this.update.bind(this), 100),
-          500
-        )
-      );
+    }
+
+    unmount() {
+      this.disable();
     }
 
     updateRule(overwrite_str) {
@@ -524,7 +559,7 @@
 
   async function main() {
     const player = new YtpPlayer();
-    await player.setup();
+    await player.ready;
 
     // setup buttons
     await player.ui.add_button({
@@ -675,6 +710,6 @@
   main()
     .then(() => console.log(`[ytp-rotate] ready`))
     .catch((err) => {
-      console.error(err);
+      console.error("[ytp-rotate]", err);
     });
 })();

@@ -46,6 +46,9 @@
 
 ## Change Log
 
+### [2.2] - 2023-12-03
+- Compatible with new version of YouTube player
+
 ### [2.1] - 2023-11-01
 - fix vertical rotate bug
 - change script namespace
