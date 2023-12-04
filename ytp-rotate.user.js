@@ -2,7 +2,7 @@
 // @author          zhzLuke96
 // @name            油管视频旋转
 // @name:en         youtube player rotate
-// @version         2.2
+// @version         2.3
 // @description     油管的视频旋转插件.
 // @description:en  rotate youtube player.
 // @namespace       https://github.com/zhzLuke96/ytp-rotate
@@ -69,7 +69,7 @@
     },
   };
   const constants = {
-    version: "v2.2",
+    version: "v2.3",
     user_lang:
       (
         navigator.language ||
@@ -94,7 +94,7 @@
     );
   }
 
-  async function ensure_query(selector) {
+  async function wait_for_element(selector) {
     let retry_count = 60;
     while (retry_count > 0) {
       const element = $(selector);
@@ -111,7 +111,7 @@
   class YtpPlayer {
     ui = new YtpPlayerUI();
     rotate_transform = new RotateTransform();
-    $player = ensure_query(".html5-video-player");
+    $player = wait_for_element(".html5-video-player");
     $video = null; // 从$player中获取
 
     enabled = true;
@@ -145,15 +145,8 @@
 
     async setup() {
       await this.waitForVideoPage();
-      const $player = await this.$player;
-      const $video = $player.querySelector(
-        ".html5-video-container .html5-main-video"
-      );
-      if (!$video) {
-        throw new Error("can't find video element");
-      }
-      this.ui.mount($video, $player);
-      this.rotate_transform.mount($video, $player);
+      await this.mount_rotate_component();
+      await this.mount_ui_component();
       this.enable();
     }
 
@@ -178,12 +171,40 @@
             }
             if (video_elem !== this.$video) {
               this.$video = video_elem;
-              this.reset_rotate_component();
+              this.reset_rotate_component().catch((e) =>
+                console.error("[ytp-rotate] reset_rotate_component failed", e)
+              );
+              // FIXME 这里最好ui也reset一下，但是现在暂时不用
+              // this.reset_ui_component();
             }
           }
         }
       });
       observer.observe(await this.$player, { childList: true });
+    }
+
+    async mount_ui_component() {
+      const $player = await this.$player;
+      const $video = $player.querySelector(
+        ".html5-video-container .html5-main-video"
+      );
+      if (!$video) {
+        throw new Error("can't find video element");
+      }
+      this.$video = $video;
+      this.ui.mount($video, $player);
+    }
+
+    async mount_rotate_component() {
+      const $player = await this.$player;
+      const $video = $player.querySelector(
+        ".html5-video-container .html5-main-video"
+      );
+      if (!$video) {
+        throw new Error("can't find video element");
+      }
+      this.$video = $video;
+      this.rotate_transform.mount($video, $player);
     }
 
     // 重置旋转组件
@@ -192,14 +213,18 @@
       console.warn(
         `[ytp-rotate] video element changed, reset rotate component...`
       );
-
-      const $player = await this.$player;
-      const $video = $player.querySelector(
-        ".html5-video-container .html5-main-video"
-      );
       this.rotate_transform.unmount();
       this.rotate_transform = new RotateTransform();
-      this.rotate_transform.mount($video, $player);
+
+      await this.mount_rotate_component();
+    }
+
+    async reset_ui_component() {
+      console.warn(`[ytp-rotate] video element changed, reset ui component...`);
+      this.ui.unmount();
+      this.ui = new YtpPlayerUI();
+
+      await this.mount_ui_component();
     }
 
     enable() {
@@ -229,6 +254,8 @@
     key2dom = {};
     enabled = true;
 
+    elements = [];
+
     buttons = [];
     menuitems = [];
 
@@ -245,6 +272,17 @@
       }
       this.$video = $video;
       this.$player = $player;
+    }
+
+    unmount() {
+      this.disable();
+      for (const element of this.elements) {
+        element.remove();
+      }
+      this.elements = [];
+      this.buttons = [];
+      this.menuitems = [];
+      this.key2dom = {};
     }
 
     enable() {
@@ -270,9 +308,9 @@
       }
     }
 
-    $right_controls = ensure_query(".ytp-right-controls");
-    $left_controls = ensure_query(".ytp-left-controls");
-    $settings_button = ensure_query(".ytp-settings-button");
+    $right_controls = wait_for_element(".ytp-right-controls");
+    $left_controls = wait_for_element(".ytp-left-controls");
+    $settings_button = wait_for_element(".ytp-settings-button");
     async add_button({
       html = "",
       class_name = "ytp-button",
@@ -287,6 +325,7 @@
       const $left_controls = await this.$left_controls;
       const $settings_button = await this.$settings_button;
       const $button = $settings_button.cloneNode(true);
+      this.elements.push($button);
 
       $button.innerHTML = html;
       $button.classList.add(class_name);
@@ -322,16 +361,27 @@
 
     query_cache = {};
     // menu的query需要等待contextmenu事件再开始检测
-    ensure_query_menu(selector) {
+    wait_for_menu_element(selector) {
       if (this.query_cache[selector]) {
         return this.query_cache[selector];
       }
+      const dom = document.querySelector(selector);
+      if (dom) {
+        this.query_cache[selector] = Promise.resolve(dom);
+        return Promise.resolve(dom);
+      }
       return new Promise((resolve) => {
-        this.$video.addEventListener("contextmenu", () => {
-          const domP = ensure_query(selector);
+        // 因为video元素随时会销毁，所以需要监听parent上
+        const target = this.$video.parentElement;
+        const handler = (ev) => {
+          // 如果不是右键
+          if (ev.button !== 2) return;
+          const domP = wait_for_element(selector);
           this.query_cache[selector] = domP;
           resolve(domP);
-        });
+          target.removeEventListener("mousedown", handler);
+        };
+        target.addEventListener("mousedown", handler);
       });
     }
 
@@ -346,11 +396,13 @@
     } = {}) {
       const [$panel_menu, $panel_menu_link_tpl, $panel_menu_div_tpl] =
         await Promise.all([
-          this.ensure_query_menu(".ytp-contextmenu>.ytp-panel>.ytp-panel-menu"),
-          this.ensure_query_menu(
+          this.wait_for_menu_element(
+            ".ytp-contextmenu>.ytp-panel>.ytp-panel-menu"
+          ),
+          this.wait_for_menu_element(
             ".ytp-contextmenu>.ytp-panel>.ytp-panel-menu>a.ytp-menuitem"
           ),
-          this.ensure_query_menu(
+          this.wait_for_menu_element(
             ".ytp-contextmenu>.ytp-panel>.ytp-panel-menu>div.ytp-menuitem"
           ),
         ]);
@@ -361,6 +413,8 @@
       } else {
         $element = $panel_menu_div_tpl.cloneNode(true);
       }
+      this.elements.push($element);
+
       const $label = $element.querySelector(".ytp-menuitem-label");
       const $content = $element.querySelector(".ytp-menuitem-content");
       const $icon = $element.querySelector(".ytp-menuitem-icon");
@@ -379,7 +433,6 @@
           }
         });
       if (icon) $icon.innerHTML = icon;
-      if (on_update) window.addEventListener("contextmenu", __on_update);
       $panel_menu.appendChild($element);
 
       this.menuitems.push({
@@ -425,6 +478,9 @@
 
     unmount() {
       this.disable();
+      this.$video.classList.remove(constants.style_rule_name);
+      this.$video = null;
+      this.$player = null;
     }
 
     updateRule(overwrite_str) {
@@ -560,6 +616,10 @@
   async function main() {
     const player = new YtpPlayer();
     await player.ready;
+
+    window.addEventListener("contextmenu", () => {
+      player.ui.update();
+    });
 
     // setup buttons
     await player.ui.add_button({
