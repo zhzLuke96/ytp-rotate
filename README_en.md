@@ -41,6 +41,10 @@ Right click on the video player to see added options:
 
 ## Change Log
 
+### [2.4] - 2023-12-16
+- observer on resize
+- remove badge
+
 ### [2.2] [2.3] - 2023-12-03
 - Compatible with new version of YouTube player
 

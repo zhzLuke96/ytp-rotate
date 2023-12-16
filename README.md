@@ -40,11 +40,14 @@
 
 
 ## Issues
-
 - [Github Issues](https://github.com/zhzLuke96/ytp-rotate/issues)
 - [Greasyfork Feedback](https://greasyfork.org/zh-CN/scripts/375568-%E6%B2%B9%E7%AE%A1%E8%A7%86%E9%A2%91%E6%97%8B%E8%BD%AC/feedback)
 
 ## Change Log
+
+### [2.4] - 2023-12-16
+- 监听resize
+- 移除badge
 
 ### [2.2] [2.3] - 2023-12-03
 - Compatible with new version of YouTube player
