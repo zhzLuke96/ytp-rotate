@@ -392,18 +392,26 @@
     }
 
     button_normalize($btn) {
+      if (!($btn instanceof HTMLButtonElement)) {
+        return;
+      }
       // 移除quality-badge相关class
       for (const cls of $btn.classList) {
         if (cls.endsWith("quality-badge")) {
           $btn.classList.remove(cls);
         }
       }
-      delete $btn.dataset["aria-controls"];
-      delete $btn.dataset["aria-haspopup"];
-      delete $btn.dataset["aria-expanded"];
-      delete $btn.dataset["aria-pressed"];
-      delete $btn.dataset["data-tooltip-text"];
-      delete $btn.dataset["data-tooltip-target-id"];
+      [
+        "aria-controls",
+        "aria-haspopup",
+        "aria-expanded",
+        "aria-pressed",
+      ].forEach((attr) => {
+        $btn.removeAttribute(attr);
+      });
+      ["tooltipText", "tooltipTargetId"].forEach((attr) => {
+        delete $btn.dataset[attr];
+      });
     }
 
     query_cache = {};
