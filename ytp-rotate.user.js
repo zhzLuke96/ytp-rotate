@@ -2,7 +2,7 @@
 // @author          zhzLuke96
 // @name            油管视频旋转
 // @name:en         youtube player rotate
-// @version         2.3
+// @version         2.4
 // @description     油管的视频旋转插件.
 // @description:en  rotate youtube player.
 // @namespace       https://github.com/zhzLuke96/ytp-rotate
@@ -69,7 +69,7 @@
     },
   };
   const constants = {
-    version: "v2.3",
+    version: "v2.4",
     user_lang:
       (
         navigator.language ||
@@ -105,7 +105,9 @@
         await delay(1000);
       }
     }
-    throw new Error(`setup failed, can't find [${selector}]`);
+    throw new Error(
+      `[ytp-rotate]TIMEOUT, setup failed, can't find [${selector}]`
+    );
   }
 
   class YtpPlayer {
@@ -121,7 +123,12 @@
 
       this.ready.then(() => {
         // ready 之后监听player元素变化
-        this.observe_player();
+        this.observe_player_rerender();
+        this.observe_player_resize();
+
+        // FIXME 没有gc
+        window.addEventListener("resize", () => this.update());
+        window.addEventListener("replaceState", () => this.update());
       });
     }
 
@@ -135,11 +142,13 @@
         return;
       }
       return new Promise((resolve) => {
-        window.addEventListener("replaceState", () => {
+        const handler = () => {
           if (is_watch_page()) {
             resolve();
+            window.removeEventListener("replaceState", handler);
           }
-        });
+        };
+        window.addEventListener("replaceState", handler);
       });
     }
 
@@ -153,7 +162,7 @@
     // 监听player元素变化
     // NOTE: 加这个是因为油管的广告也是用player播放，并且播放完之后video元素不会复用...直接就删了...所以需要监听player的子元素变化
     // NOTE2: 其实理论上说css写在player上就行了，但是计算缩放需要针对特定的视频分辨率，所以还是写在video上比较好
-    async observe_player() {
+    async observe_player_rerender() {
       if (window.MutationObserver === undefined) {
         // 有可能没有
         console.warn(
@@ -181,6 +190,24 @@
         }
       });
       observer.observe(await this.$player, { childList: true });
+    }
+
+    async observe_player_resize() {
+      if (window.ResizeObserver === undefined) {
+        console.warn(
+          `[ytp-rotate] ResizeObserver not supported, can't observe player`
+        );
+        return;
+      }
+      const $player = await this.$player;
+      const observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.target === $player) {
+            this.update();
+          }
+        }
+      });
+      observer.observe($player);
     }
 
     async mount_ui_component() {
@@ -244,7 +271,8 @@
       this.update();
     }
 
-    update() {
+    async update() {
+      await this.ready;
       this.rotate_transform.update();
       this.ui.update();
     }
@@ -332,7 +360,10 @@
       if (css_text) $button.style.cssText = css_text;
       if (id) $button.id = id;
       if (key) this.key2dom[key] = $button;
-      if (title) $button.title = title;
+      if (title) {
+        $button.title = title;
+        $button.setAttribute("aria-label", title);
+      }
       if (on_click)
         $button.addEventListener("click", async (ev) => {
           try {
@@ -355,8 +386,24 @@
         key,
         id,
       });
+      this.button_normalize($button);
 
       return $button;
+    }
+
+    button_normalize($btn) {
+      // 移除quality-badge相关class
+      for (const cls of $btn.classList) {
+        if (cls.endsWith("quality-badge")) {
+          $btn.classList.remove(cls);
+        }
+      }
+      delete $btn.dataset["aria-controls"];
+      delete $btn.dataset["aria-haspopup"];
+      delete $btn.dataset["aria-expanded"];
+      delete $btn.dataset["aria-pressed"];
+      delete $btn.dataset["data-tooltip-text"];
+      delete $btn.dataset["data-tooltip-target-id"];
     }
 
     query_cache = {};
