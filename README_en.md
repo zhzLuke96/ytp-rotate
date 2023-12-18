@@ -41,6 +41,9 @@ Right click on the video player to see added options:
 
 ## Change Log
 
+### [2.5] - 2023-12-19
+- init bug fix (后台打开视频时出现白边问题 #5)
+- 
 ### [2.4] - 2023-12-16
 - observer on resize
 - remove badge
