@@ -2,7 +2,7 @@
 // @author          zhzLuke96
 // @name            油管视频旋转
 // @name:en         youtube player rotate
-// @version         2.4
+// @version         2.5
 // @description     油管的视频旋转插件.
 // @description:en  rotate youtube player.
 // @namespace       https://github.com/zhzLuke96/ytp-rotate
@@ -69,7 +69,7 @@
     },
   };
   const constants = {
-    version: "v2.4",
+    version: GM_info.script.version,
     user_lang:
       (
         navigator.language ||
@@ -518,6 +518,16 @@
       this.enable();
     }
 
+    isNoneEffect() {
+      const { rotate, horizontal, vertical, cover_screen } = this.status;
+      return (
+        rotate === 0 &&
+        horizontal === false &&
+        vertical === false &&
+        cover_screen === false
+      );
+    }
+
     mount($video, $player) {
       if (!($video instanceof HTMLVideoElement)) {
         throw new Error("$video must be a HTMLVideoElement");
@@ -586,20 +596,13 @@
       if (!$player || !$video) {
         throw new Error("can't find player or video element");
       }
-      const scaleK = this.calcScaleK();
-
-      // 等于没有开启插件
-      const is_weak_enabled =
-        scaleK === 1 &&
-        this.status.rotate === 0 &&
-        this.status.cover_screen === false &&
-        this.status.horizontal === false &&
-        this.status.vertical === false;
-      if (is_weak_enabled) {
+      if (this.isNoneEffect()) {
         // 清空副作用
         this.updateRule("");
         return;
       }
+
+      const scaleK = this.calcScaleK();
 
       const transform_arr = [
         `rotate(${this.status.rotate * 90}deg)`,
