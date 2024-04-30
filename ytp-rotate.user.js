@@ -2,7 +2,7 @@
 // @author          zhzLuke96
 // @name            油管视频旋转
 // @name:en         youtube player rotate
-// @version         2.5
+// @version         2.6
 // @description     油管的视频旋转插件.
 // @description:en  rotate youtube player.
 // @namespace       https://github.com/zhzLuke96/ytp-rotate
@@ -17,20 +17,6 @@
 
 (async function () {
   "use strict";
-  // add replaceState event
-  var _wr = function (type) {
-    var orig = history[type];
-    return function () {
-      var rv = orig.apply(this, arguments);
-      var e = new Event(type);
-      e.arguments = arguments;
-      window.dispatchEvent(e);
-      return rv;
-    };
-  };
-  // pushState用不到
-  // history.pushState = _wr("pushState");
-  history.replaceState = _wr("replaceState");
   // assets
   const assets = {
     locals: {
@@ -110,10 +96,143 @@
     );
   }
 
+  class YtdApp {
+    static EVENT_onReady = "onReady";
+    static EVENT_innertubeCommand = "innertubeCommand";
+    static EVENT_onOrchestrationBecameLeader = "onOrchestrationBecameLeader";
+    static EVENT_onOrchestrationLostLeader = "onOrchestrationLostLeader";
+    static EVENT_onOfflineOperationFailure = "onOfflineOperationFailure";
+    static EVENT_SIZE_CLICKED = "SIZE_CLICKED";
+    static EVENT_onFullerscreenEduClicked = "onFullerscreenEduClicked";
+    static EVENT_onStateChange = "onStateChange";
+    static EVENT_onPlayVideo = "onPlayVideo";
+    static EVENT_onAutonavChangeRequest = "onAutonavChangeRequest";
+    static EVENT_onVideoDataChange = "onVideoDataChange";
+    static EVENT_onCollapseMiniplayer = "onCollapseMiniplayer";
+    static EVENT_cinematicSettingsToggleChange =
+      "cinematicSettingsToggleChange";
+    static EVENT_onFeedbackStartRequest = "onFeedbackStartRequest";
+    static EVENT_onFeedbackArticleRequest = "onFeedbackArticleRequest";
+    static EVENT_onYpcContentRequest = "onYpcContentRequest";
+    static EVENT_onAutonavPauseRequest = "onAutonavPauseRequest";
+    static EVENT_onAdStateChange = "onAdStateChange";
+    static EVENT_CONNECTION_ISSUE = "CONNECTION_ISSUE";
+    static EVENT_SUBSCRIBE = "SUBSCRIBE";
+    static EVENT_UNSUBSCRIBE = "UNSUBSCRIBE";
+    static EVENT_onYtShowToast = "onYtShowToast";
+    static EVENT_onFullscreenChange = "onFullscreenChange";
+    static EVENT_onAbnormalityDetected = "onAbnormalityDetected";
+    static EVENT_onAutonavCoundownStarted = "onAutonavCoundownStarted";
+    static EVENT_updateEngagementPanelAction = "updateEngagementPanelAction";
+    static EVENT_changeEngagementPanelVisibility =
+      "changeEngagementPanelVisibility";
+    static EVENT_onVideoProgress = "onVideoProgress";
+
+    static PlayerStates = {
+      [2]: "paused",
+      [3]: "playing",
+      [5]: "cued",
+    };
+
+    // 这个组件是全局单例，页面不关闭都存在
+    $root = wait_for_element("ytd-app");
+
+    // inner ytd-player instance
+    _ytd_player_ = null;
+    $player_root = null;
+
+    $right_controls = this.wait_for_element(".ytp-right-controls");
+    $left_controls = this.wait_for_element(".ytp-left-controls");
+    $settings_button = this.wait_for_element(".ytp-settings-button");
+
+    ready = new Promise(async (resolve, reject) => {
+      const query_player = async () => {
+        const root = await this.$root;
+        this.$player_root = root.querySelector(".html5-video-player");
+        if (this.$player_root) {
+          resolve();
+          return this.$player_root;
+        }
+      };
+      const instance = await this.ytd_player_instance();
+      instance.addEventListener(YtdApp.EVENT_onReady, query_player);
+      instance.addEventListener(YtdApp.EVENT_onPlayVideo, query_player);
+      instance.addEventListener(YtdApp.EVENT_onVideoDataChange, query_player);
+      instance.addEventListener(YtdApp.EVENT_onVideoProgress, query_player);
+
+      // 不需要...
+      // setTimeout(() => {
+      //   reject(new Error("timeout"));
+      // }, 1000 * 60);
+    });
+
+    async ytd_player_instance() {
+      while (!this._ytd_player_) {
+        const $player = await wait_for_element("ytd-player");
+        this._ytd_player_ = $player.player_;
+        await delay(1000);
+      }
+      return this._ytd_player_;
+    }
+
+    /**
+     *
+     * @returns {Promise<Number>}
+     */
+    async get_player_state() {
+      const instance = await this.ytd_player_instance();
+      return instance.getPlayerState();
+    }
+
+    /**
+     *
+     * @param {String} event
+     */
+    async wait_for_player_event(event) {
+      const instance = await this.ytd_player_instance();
+      return new Promise((resolve) => {
+        instance.addEventListener(event, resolve);
+      });
+    }
+
+    /**
+     *
+     * @param {String} selector
+     * @returns {Promise<HTMLElement>}
+     */
+    async wait_for_element(selector) {
+      await this.ready;
+      const $player = await this.get_player_root();
+      let element = $player.querySelector(selector);
+      while (!element) {
+        await delay(500);
+        element = $player.querySelector(selector);
+      }
+      return element;
+    }
+
+    /**
+     *
+     * @returns {Promise<HTMLDivElement>}
+     */
+    async get_player_root() {
+      if (this.$player_root) {
+        return this.$player_root;
+      }
+      await this.ready;
+      this.$player_root = document.querySelector(".html5-video-player");
+      if (this.$player_root) {
+        return this.$player_root;
+      }
+      throw new Error("can't find player element");
+    }
+  }
+  const ytd_app = new YtdApp();
+
   class YtpPlayer {
     ui = new YtpPlayerUI();
     rotate_transform = new RotateTransform();
-    $player = wait_for_element(".html5-video-player");
+    $player = ytd_app.get_player_root();
     $video = null; // 从$player中获取
 
     enabled = true;
@@ -128,32 +247,12 @@
 
         // FIXME 没有gc
         window.addEventListener("resize", () => this.update());
-        window.addEventListener("replaceState", () => this.update());
-      });
-    }
-
-    // 需要等待到视频页面
-    waitForVideoPage() {
-      const is_watch_page = () => {
-        const url = new URL(window.location.href);
-        return url.pathname.startsWith("/watch");
-      };
-      if (is_watch_page()) {
-        return;
-      }
-      return new Promise((resolve) => {
-        const handler = () => {
-          if (is_watch_page()) {
-            resolve();
-            window.removeEventListener("replaceState", handler);
-          }
-        };
-        window.addEventListener("replaceState", handler);
+        window.addEventListener("popstate", () => this.update());
       });
     }
 
     async setup() {
-      await this.waitForVideoPage();
+      await this.$player;
       await this.mount_rotate_component();
       await this.mount_ui_component();
       this.enable();
@@ -336,9 +435,6 @@
       }
     }
 
-    $right_controls = wait_for_element(".ytp-right-controls");
-    $left_controls = wait_for_element(".ytp-left-controls");
-    $settings_button = wait_for_element(".ytp-settings-button");
     async add_button({
       html = "",
       class_name = "ytp-button",
@@ -349,9 +445,9 @@
       title = "",
       to_right = true,
     } = {}) {
-      const $right_controls = await this.$right_controls;
-      const $left_controls = await this.$left_controls;
-      const $settings_button = await this.$settings_button;
+      const $right_controls = await ytd_app.$right_controls;
+      const $left_controls = await ytd_app.$left_controls;
+      const $settings_button = await ytd_app.$settings_button;
       const $button = $settings_button.cloneNode(true);
       this.elements.push($button);
 

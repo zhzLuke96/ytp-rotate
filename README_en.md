@@ -41,6 +41,9 @@ Right click on the video player to see added options:
 
 ## Change Log
 
+### [2.6] - 2024-05-01
+- 使用 player 内部组件实例监听变化 (通过首页点进视频时无法显示按钮 #6)
+- 
 ### [2.5] - 2023-12-19
 - init bug fix (后台打开视频时出现白边问题 #5)
 - 
