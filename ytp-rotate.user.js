@@ -2,7 +2,7 @@
 // @author          zhzLuke96
 // @name            油管视频旋转
 // @name:en         youtube player rotate
-// @version         2.6
+// @version         2.7
 // @description     油管的视频旋转插件.
 // @description:en  rotate youtube player.
 // @namespace       https://github.com/zhzLuke96/ytp-rotate
@@ -80,6 +80,30 @@
     );
   }
 
+  /**
+   * debounce
+   *
+   * @param {Function} func - The function to debounce.
+   * @param {number} wait - The number of milliseconds to delay.
+   * @param {boolean} [immediate=false] - Specifies whether the function should be invoked on the leading edge (`true`) or the trailing edge (`false`) of the `wait` timeout. Default is `false`.
+   * @return {Function} - The debounced function.
+   */
+  function debounce(func, wait, immediate = false) {
+    let timeout;
+    return function () {
+      const context = this,
+        args = arguments;
+      const later = function () {
+        timeout = null;
+        if (!immediate) func.apply(context, args);
+      };
+      const callNow = immediate && !timeout;
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+      if (callNow) func.apply(context, args);
+    };
+  }
+
   async function wait_for_element(selector) {
     let retry_count = 60;
     while (retry_count > 0) {
@@ -138,6 +162,9 @@
     $root = wait_for_element("ytd-app");
 
     // inner ytd-player instance
+    /**
+     * @type {YtdInstance}
+     */
     _ytd_player_ = null;
     $player_root = null;
 
@@ -155,6 +182,10 @@
         }
       };
       const instance = await this.ytd_player_instance();
+      if (!instance) {
+        reject(new Error("can't find ytd-player instance"));
+        return;
+      }
       instance.addEventListener(YtdApp.EVENT_onReady, query_player);
       instance.addEventListener(YtdApp.EVENT_onPlayVideo, query_player);
       instance.addEventListener(YtdApp.EVENT_onVideoDataChange, query_player);
@@ -241,14 +272,31 @@
       this.ready = this.setup();
 
       this.ready.then(() => {
-        // ready 之后监听player元素变化
-        this.observe_player_rerender();
-        this.observe_player_resize();
-
-        // FIXME 没有gc
-        window.addEventListener("resize", () => this.update());
-        window.addEventListener("popstate", () => this.update());
+        console.log("[ytp-rotate:player] ready");
+        this.setup_observer();
       });
+    }
+
+    async setup_observer() {
+      // ready 之后监听player元素变化
+      this.observe_player_rerender();
+      this.observe_player_resize();
+
+      const debounce_update = debounce(() => this.update(), 300);
+
+      // FIXME 没有gc
+      window.addEventListener("resize", debounce_update);
+      window.addEventListener("popstate", debounce_update);
+
+      const instance = await ytd_app.ytd_player_instance();
+      if (!instance) {
+        console.warn("[ytp-rotate] can't find ytd-player instance");
+        return;
+      }
+      instance.addEventListener(
+        YtdApp.EVENT_onVideoDataChange,
+        debounce_update
+      );
     }
 
     async setup() {
@@ -370,10 +418,19 @@
       this.update();
     }
 
+    async is_visible() {
+      return (await this.$player).getBoundingClientRect().width > 0;
+    }
+
     async update() {
+      if (!this.enabled || !(await this.is_visible())) {
+        return;
+      }
       await this.ready;
       this.rotate_transform.update();
       this.ui.update();
+      // debug
+      // console.log("[ytp-rotate] update", Date.now());
     }
   }
 

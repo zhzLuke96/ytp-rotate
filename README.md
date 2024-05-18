@@ -45,6 +45,9 @@
 
 ## Change Log
 
+### [2.7] - 2024-05-18
+- add update function trigger timing
+
 ### [2.6] - 2024-05-01
 - 使用 player 内部组件实例监听变化 (通过首页点进视频时无法显示按钮 #6)
 
