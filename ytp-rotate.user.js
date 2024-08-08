@@ -2,7 +2,7 @@
 // @author          zhzLuke96
 // @name            油管视频旋转
 // @name:en         youtube player rotate
-// @version         2.7
+// @version         2.8
 // @description     油管的视频旋转插件.
 // @description:en  rotate youtube player.
 // @namespace       https://github.com/zhzLuke96/ytp-rotate
@@ -78,6 +78,27 @@
         .map(([k, v]) => `${k}:${v} ${important ? "!important" : ""};`)
         .join("\n")
     );
+  }
+
+  if (
+    window.trustedTypes?.createPolicy &&
+    !window.trustedTypes?.defaultPolicy
+  ) {
+    // NOTE: 为了解决 `This document requires 'TrustedHTML' assignment.` 问题
+    window.trustedTypes.createPolicy("default", {
+      createHTML: (string, sink) => string,
+    });
+  }
+
+  /**
+   *
+   * @param {string} string
+   * @returns {string}
+   */
+  function trusted_html(string) {
+    return window.trustedTypes?.defaultPolicy
+      ? window.trustedTypes.defaultPolicy.createHTML(string)
+      : string;
   }
 
   /**
@@ -508,7 +529,7 @@
       const $button = $settings_button.cloneNode(true);
       this.elements.push($button);
 
-      $button.innerHTML = html;
+      $button.innerHTML = trusted_html(html);
       $button.classList.add(class_name);
       if (css_text) $button.style.cssText = css_text;
       if (id) $button.id = id;
@@ -629,8 +650,8 @@
       const __on_update = (ev) =>
         on_update && on_update({ $element, $label, $content, $icon, ev });
       if (key) this.key2dom[key] = $element;
-      if (label) $label.innerHTML = label;
-      if (content) $content.innerHTML = content;
+      if (label) $label.innerHTML = trusted_html(label);
+      if (content) $content.innerHTML = trusted_html(content);
       if (on_click)
         $element.addEventListener("click", async (ev) => {
           try {
@@ -640,7 +661,7 @@
             console.error(error);
           }
         });
-      if (icon) $icon.innerHTML = icon;
+      if (icon) $icon.innerHTML = trusted_html(icon);
       $panel_menu.appendChild($element);
 
       this.menuitems.push({
@@ -704,7 +725,9 @@
     updateRule(overwrite_str) {
       const cssText =
         overwrite_str === undefined ? $css(this.styles) : overwrite_str;
-      this.$style.innerHTML = `.${constants.style_rule_name}{${cssText}}`;
+      this.$style.innerHTML = trusted_html(
+        `.${constants.style_rule_name}{${cssText}}`
+      );
     }
 
     /**
@@ -899,7 +922,9 @@
         player.rotate_transform.rotate();
       },
       on_update: ({ $content }) => {
-        $content.innerHTML = player.rotate_transform.status.rotate * 90 + "°";
+        $content.innerHTML = trusted_html(
+          player.rotate_transform.status.rotate * 90 + "°"
+        );
       },
       label: i18n("rotate90"),
       content: "0°",

@@ -45,6 +45,9 @@
 
 ## Change Log
 
+### [2.8] - 2024-08-09
+- fix TrustedHTML issues
+
 ### [2.7] - 2024-05-18
 - add update function trigger timing
 
