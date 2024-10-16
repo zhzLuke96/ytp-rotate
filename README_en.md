@@ -38,40 +38,8 @@ Right click on the video player to see added options:
 - [Github Issues](https://github.com/zhzLuke96/ytp-rotate/issues)
 - [Greasyfork Feedback](https://greasyfork.org/zh-CN/scripts/375568-%E6%B2%B9%E7%AE%A1%E8%A7%86%E9%A2%91%E6%97%8B%E8%BD%AC/feedback)
 
-
-## Change Log
-
-### [2.8] - 2024-08-09
-- fix TrustedHTML issues
-
-### [2.7] - 2024-05-18
-- add update function trigger timing
-
-### [2.6] - 2024-05-01
-- 使用 player 内部组件实例监听变化 (通过首页点进视频时无法显示按钮 #6)
- 
-### [2.5] - 2023-12-19
-- init bug fix (后台打开视频时出现白边问题 #5)
- 
-### [2.4] - 2023-12-16
-- observer on resize
-- remove badge
-
-### [2.2] [2.3] - 2023-12-03
-- Compatible with new version of YouTube player
-
-### [2.1] - 2023-11-01
-- Fix vertical rotate bug
-- Change script namespace
-
-### [2.0] - 2023-10-28  
-- Refactor code
-- Add SVG icons
-- Improve script listener methods
-- Add fill screen mode
-- Remove GitHub link menu button
-- Add toggle script option to right click menu to avoid conflicts
-
+## CHANGELOG
+[here](CHANGELOG.md)
 
 ## License
 MIT

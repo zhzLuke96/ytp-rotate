@@ -2,7 +2,7 @@
 // @author          zhzLuke96
 // @name            油管视频旋转
 // @name:en         youtube player rotate
-// @version         2.8
+// @version         2.9
 // @description     油管的视频旋转插件.
 // @description:en  rotate youtube player.
 // @namespace       https://github.com/zhzLuke96/ytp-rotate
@@ -80,25 +80,58 @@
     );
   }
 
-  if (
-    window.trustedTypes?.createPolicy &&
-    !window.trustedTypes?.defaultPolicy
-  ) {
-    // NOTE: 为了解决 `This document requires 'TrustedHTML' assignment.` 问题
-    window.trustedTypes.createPolicy("default", {
-      createHTML: (string, sink) => string,
-    });
+  // 首先，检查 trustedTypes 是否可用
+  if (window.trustedTypes) {
+    // 如果默认策略不存在，创建一个新的默认策略
+    if (!window.trustedTypes.defaultPolicy) {
+      try {
+        window.trustedTypes.createPolicy("default", {
+          createHTML: (string, sink) => {
+            return string;
+          },
+        });
+      } catch (error) {
+        console.error("Failed to create default Trusted Types policy:", error);
+      }
+    }
+
+    // 如果默认策略存在但没有 createHTML 方法，尝试添加这个方法
+    if (
+      window.trustedTypes.defaultPolicy &&
+      !window.trustedTypes.defaultPolicy.createHTML
+    ) {
+      try {
+        Object.defineProperty(window.trustedTypes.defaultPolicy, "createHTML", {
+          value: function (string, sink) {
+            return string;
+          },
+          writable: false,
+          enumerable: true,
+          configurable: false,
+        });
+      } catch (error) {
+        console.error(
+          "Failed to add createHTML to default Trusted Types policy:",
+          error
+        );
+      }
+    }
   }
 
   /**
-   *
    * @param {string} string
-   * @returns {string}
+   * @returns {string | TrustedHTML}
    */
   function trusted_html(string) {
-    return window.trustedTypes?.defaultPolicy
-      ? window.trustedTypes.defaultPolicy.createHTML(string)
-      : string;
+    if (window.trustedTypes?.defaultPolicy?.createHTML) {
+      try {
+        return window.trustedTypes.defaultPolicy.createHTML(string);
+      } catch (error) {
+        console.error("Failed to create trusted HTML:", error);
+        return string;
+      }
+    }
+    return string;
   }
 
   /**
