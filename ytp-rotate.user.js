@@ -80,6 +80,7 @@
     );
   }
 
+  // NOTE: 为了解决 `This document requires 'TrustedHTML' assignment.` 问题
   // 首先，检查 trustedTypes 是否可用
   if (window.trustedTypes) {
     // 如果默认策略不存在，创建一个新的默认策略
