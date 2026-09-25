@@ -2,7 +2,7 @@
 // @author          zhzLuke96
 // @name            油管视频旋转
 // @name:en         youtube player rotate
-// @version         2.13
+// @version         2.15
 // @description     油管的视频旋转插件.
 // @description:en  rotate youtube player.
 // @namespace       https://github.com/zhzLuke96/ytp-rotate
@@ -193,109 +193,15 @@
     }
   
     class YtdApp {
-      static EVENT_onReady = "onReady"
-      static EVENT_innertubeCommand = "innertubeCommand"
-      static EVENT_onOrchestrationBecameLeader = "onOrchestrationBecameLeader"
-      static EVENT_onOrchestrationLostLeader = "onOrchestrationLostLeader"
-      static EVENT_onOfflineOperationFailure = "onOfflineOperationFailure"
-      static EVENT_SIZE_CLICKED = "SIZE_CLICKED"
-      static EVENT_onFullerscreenEduClicked = "onFullerscreenEduClicked"
-      static EVENT_onStateChange = "onStateChange"
-      static EVENT_onPlayVideo = "onPlayVideo"
-      static EVENT_onAutonavChangeRequest = "onAutonavChangeRequest"
-      static EVENT_onVideoDataChange = "onVideoDataChange"
-      static EVENT_onCollapseMiniplayer = "onCollapseMiniplayer"
-      static EVENT_cinematicSettingsToggleChange = "cinematicSettingsToggleChange"
-      static EVENT_onFeedbackStartRequest = "onFeedbackStartRequest"
-      static EVENT_onFeedbackArticleRequest = "onFeedbackArticleRequest"
-      static EVENT_onYpcContentRequest = "onYpcContentRequest"
-      static EVENT_onAutonavPauseRequest = "onAutonavPauseRequest"
-      static EVENT_onAdStateChange = "onAdStateChange"
-      static EVENT_CONNECTION_ISSUE = "CONNECTION_ISSUE"
-      static EVENT_SUBSCRIBE = "SUBSCRIBE"
-      static EVENT_UNSUBSCRIBE = "UNSUBSCRIBE"
-      static EVENT_onYtShowToast = "onYtShowToast"
-      static EVENT_onFullscreenChange = "onFullscreenChange"
-      static EVENT_onAbnormalityDetected = "onAbnormalityDetected"
-      static EVENT_onAutonavCoundownStarted = "onAutonavCoundownStarted"
-      static EVENT_updateEngagementPanelAction = "updateEngagementPanelAction"
-      static EVENT_changeEngagementPanelVisibility =
-        "changeEngagementPanelVisibility"
-      static EVENT_onVideoProgress = "onVideoProgress"
-  
-      static PlayerStates = {
-        [2]: "paused",
-        [3]: "playing",
-        [5]: "cued",
-      }
-  
-      // 这个组件是全局单例，页面不关闭都存在
-      $root = wait_for_element("ytd-app")
-  
-      // inner ytd-player instance
-      /**
-       * @type {YtdInstance}
-       */
-      _ytd_player_ = null
       $player_root = null
   
-      $right_controls = this.wait_for_element(".ytp-right-controls")
-      $left_controls = this.wait_for_element(".ytp-left-controls")
-      $settings_button = this.wait_for_element(".ytp-settings-button")
-  
-      ready = new Promise(async (resolve, reject) => {
-        const query_player = async () => {
-          const root = await this.$root
-          this.$player_root = root.querySelector(".html5-video-player")
-          if (this.$player_root) {
-            resolve()
-            return this.$player_root
-          }
-        }
-        const instance = await this.ytd_player_instance()
-        if (!instance) {
-          reject(new Error("can't find ytd-player instance"))
-          return
-        }
-        instance.addEventListener(YtdApp.EVENT_onReady, query_player)
-        instance.addEventListener(YtdApp.EVENT_onPlayVideo, query_player)
-        instance.addEventListener(YtdApp.EVENT_onVideoDataChange, query_player)
-        instance.addEventListener(YtdApp.EVENT_onVideoProgress, query_player)
-  
-        // 不需要...
-        // setTimeout(() => {
-        //   reject(new Error("timeout"));
-        // }, 1000 * 60);
+      // YouTube's private player events can fire before the userscript starts.
+      // Resolve readiness from the rendered DOM instead of waiting for an event
+      // that may never be emitted again.
+      ready = wait_for_element(".html5-video-player").then(($player) => {
+        this.$player_root = $player
+        return $player
       })
-  
-      async ytd_player_instance() {
-        while (!this._ytd_player_) {
-          const $player = await wait_for_element("ytd-player")
-          this._ytd_player_ = $player.player_
-          await delay(1000)
-        }
-        return this._ytd_player_
-      }
-  
-      /**
-       *
-       * @returns {Promise<Number>}
-       */
-      async get_player_state() {
-        const instance = await this.ytd_player_instance()
-        return instance.getPlayerState()
-      }
-  
-      /**
-       *
-       * @param {String} event
-       */
-      async wait_for_player_event(event) {
-        const instance = await this.ytd_player_instance()
-        return new Promise((resolve) => {
-          instance.addEventListener(event, resolve)
-        })
-      }
   
       /**
        *
@@ -358,13 +264,7 @@
         // FIXME 没有gc
         window.addEventListener("resize", debounce_update)
         window.addEventListener("popstate", debounce_update)
-  
-        const instance = await ytd_app.ytd_player_instance()
-        if (!instance) {
-          console.warn("[ytp-rotate] can't find ytd-player instance")
-          return
-        }
-        instance.addEventListener(YtdApp.EVENT_onVideoDataChange, debounce_update)
+        document.addEventListener("yt-navigate-finish", debounce_update)
       }
   
       async setup() {
@@ -385,26 +285,24 @@
           )
           return
         }
-        const observer = new MutationObserver((mutationsList, observer) => {
-          for (const mutation of mutationsList) {
-            if (mutation.type === "childList") {
-              const video_elem =
-                mutation.target.querySelector(".html5-main-video")
-              if (!video_elem) {
-                continue
-              }
-              if (video_elem !== this.$video) {
-                this.$video = video_elem
-                this.reset_rotate_component().catch((e) =>
-                  console.error("[ytp-rotate] reset_rotate_component failed", e)
-                )
-                // FIXME 这里最好ui也reset一下，但是现在暂时不用
-                // this.reset_ui_component();
-              }
-            }
+        const refresh_components = debounce(() => {
+          const $player = this.ui.$player
+          const video_elem = $player?.querySelector(".html5-main-video")
+          if (video_elem && video_elem !== this.$video) {
+            this.$video = video_elem
+            this.reset_rotate_component().catch((e) =>
+              console.error("[ytp-rotate] reset_rotate_component failed", e)
+            )
           }
+          this.ui.ensure_buttons_mounted().catch((e) =>
+            console.error("[ytp-rotate] restore buttons failed", e)
+          )
+        }, 100)
+        const observer = new MutationObserver(refresh_components)
+        observer.observe(await this.$player, {
+          childList: true,
+          subtree: true,
         })
-        observer.observe(await this.$player, { childList: true })
       }
   
       async observe_player_resize() {
@@ -559,6 +457,46 @@
           item.on_update?.()
         }
       }
+
+      async wait_for_button_container(to_right) {
+        let retry_count = 120
+        while (retry_count > 0) {
+          const $container = to_right
+            ? this.$player.querySelector(".ytp-right-controls-left") ||
+              this.$player.querySelector(".ytp-right-controls")
+            : this.$player.querySelector(".ytp-left-controls")
+          if ($container instanceof HTMLElement) {
+            return $container
+          }
+          retry_count--
+          await delay(500)
+        }
+        throw new Error("can't find player button container")
+      }
+
+      async mount_button($button, to_right) {
+        const $container = await this.wait_for_button_container(to_right)
+        if (to_right) {
+          const $settings_button = $container.querySelector(
+            ":scope > .ytp-settings-button"
+          )
+          $container.insertBefore(
+            $button,
+            $settings_button || $container.firstElementChild
+          )
+        } else {
+          $container.appendChild($button)
+        }
+      }
+
+      async ensure_buttons_mounted() {
+        for (const { $button, to_right } of this.buttons) {
+          const $container = await this.wait_for_button_container(to_right)
+          if ($button.parentElement !== $container) {
+            await this.mount_button($button, to_right)
+          }
+        }
+      }
   
       async add_button({
         html = "",
@@ -570,14 +508,11 @@
         title = "",
         to_right = true,
       } = {}) {
-        const $right_controls = await ytd_app.$right_controls
-        const $left_controls = await ytd_app.$left_controls
-        const $settings_button = await ytd_app.$settings_button
-        const $button = $settings_button.cloneNode(true)
+        const $button = document.createElement("button")
         this.elements.push($button)
   
         $button.innerHTML = trusted_html(html)
-        $button.classList.add(class_name)
+        $button.classList.add(...class_name.split(/\s+/).filter(Boolean))
         if (css_text) $button.style.cssText = css_text
         if (id) $button.id = id
         if (key) this.key2dom[key] = $button
@@ -593,18 +528,16 @@
               console.error(error)
             }
           })
-        if (to_right) {
-          $right_controls.insertBefore($button, $right_controls.firstElementChild)
-        } else {
-          $left_controls.appendChild($button)
-        }
-        this.buttons.push({
+        const button = {
           $button,
           on_click,
           key,
           id,
-        })
+          to_right,
+        }
+        this.buttons.push(button)
         this.button_normalize($button)
+        await this.mount_button($button, to_right)
   
         return $button
       }
@@ -955,7 +888,6 @@
             "align-items": "center",
             "justify-content": "center",
             width: "48px",
-            height: "48px",
             color: "#fff",
             fill: "#fff",
             "vertical-align": "top",
@@ -975,7 +907,6 @@
             "align-items": "center",
             "justify-content": "center",
             width: "48px",
-            height: "48px",
             color: "#fff",
             fill: "#fff",
             "vertical-align": "top",
@@ -1099,4 +1030,3 @@
         console.error("[ytp-rotate]", err)
       })
   })()
-  
